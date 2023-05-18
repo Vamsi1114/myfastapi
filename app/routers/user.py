@@ -92,16 +92,18 @@ def edit_profile(user: schemas.Edit, current_user: models.User = Depends(oauth2.
     user_details = db.query(models.UserDetail).filter(models.UserDetail.user_id == current_user.id).first()
     if user_details is None:
         raise HTTPException(detail= 'invalid credentials or user profile was not created', status_code=status.HTTP_403_FORBIDDEN)
-    
+    # copy the schema to the variable
     copy = user
     for field, value in user.dict(exclude_unset=True).items():
         if value is not None :
             setattr(user_details, field, value)
+    user_details.updated_on = datetime.now()
 
-    user_data = db.query(models.User).filter(models.User.id == current_user.id).first()
+    # user_data = db.query(models.User).filter(models.User.id == current_user.id).first()
     for field, value in copy.dict(exclude_unset=True).items():
         if value is not None :
-            setattr(user_data, field , value)
+            setattr(current_user, field , value)
+    current_user.updated_on = datetime.now()
 
     db.commit()
     return {"Meassage" : "user profile updated sucessfully"}
