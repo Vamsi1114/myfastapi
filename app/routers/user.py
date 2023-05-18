@@ -88,17 +88,24 @@ def user_profile(user: schemas.UserDetails, current_user: models.User = Depends(
 
 #edit profile
 @router.put("/edit_profile")
-def edit_profile(user: schemas.UserDetails, current_user: models.User = Depends(oauth2.get_current_user), db:Session = Depends(get_db)):
-    query = db.query(models.UserDetail).filter(models.UserDetail.user_id == current_user.id)
-    data = query.first()
-    if data is None:
+def edit_profile(user: schemas.Edit, current_user: models.User = Depends(oauth2.get_current_user), db:Session = Depends(get_db)):
+    user_details = db.query(models.UserDetail).filter(models.UserDetail.user_id == current_user.id).first()
+    if user_details is None:
         raise HTTPException(detail= 'invalid credentials or user profile was not created', status_code=status.HTTP_403_FORBIDDEN)
     
-    update = schemas.UserDetails(**user.dict())
-    update.updated_on = datetime.now()
-    query.update(update.dict())
+    copy = user
+    for field, value in user.dict(exclude_unset=True).items():
+        if value is not None :
+            setattr(user_details, field, value)
+
+    user_data = db.query(models.User).filter(models.User.id == current_user.id).first()
+    for field, value in copy.dict(exclude_unset=True).items():
+        if value is not None :
+            setattr(user_data, field , value)
+
     db.commit()
     return {"Meassage" : "user profile updated sucessfully"}
+   
 
 #logout 
 @router.post("/logout")

@@ -29,6 +29,17 @@ class UserDetails(BaseModel):
     address: str
     updated_on : Optional[datetime]
 
+class Edit(BaseModel):
+    first_name : str = None
+    last_name : str = None
+    created_on : datetime = None
+    date_of_birth : date = None
+    phone_number  : str = None
+    bio: str = None
+    image_url: str = None
+    gender: str = None
+    address: str = None
+    
 
 class SetPassword(BaseModel):
     password : str
