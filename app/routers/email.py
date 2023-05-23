@@ -16,7 +16,7 @@ def email_verify(email : schemas.Email, db : Session = Depends(database.get_db))
     email_data = db.query(models.Email).filter(models.Email.email == email.email).first()
     user = db.query(models.User).filter(models.User.email_id == email_data.id).first()
     if user  :
-      raise HTTPException(detail= 'user already exists', status_code=status.HTTP_403_FORBIDDEN)
+      raise HTTPException(detail= 'user already exists', status_code=status.HTTP_409_CONFLICT)
     
     acess_token = oauth2.create_access_token(data={"user_id":email_data.id})
     return {"access_token" : acess_token, "token_type": "bearer"}

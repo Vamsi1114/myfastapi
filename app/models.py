@@ -11,8 +11,8 @@ class Email(Base):
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key= True, nullable=False)
-    email_id = Column(Integer, ForeignKey("emails.id", ondelete="CASCADE"), nullable=False, unique=True)
+    id = Column(Integer, primary_key= True)
+    email_id = Column(Integer, ForeignKey("emails.id", ondelete="CASCADE"))
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     password = Column(String, nullable=False)
@@ -24,7 +24,7 @@ class User(Base):
 
 class UserDetail(Base):
     __tablename__ = "user_details"
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     bio = Column(String)
     image_url =  Column(String)

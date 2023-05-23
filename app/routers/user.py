@@ -14,11 +14,11 @@ oauth2_scheme =OAuth2PasswordBearer(tokenUrl='email_verify')
 @router.post("/user", status_code=status.HTTP_201_CREATED, response_model=schemas.UserOut)
 def create_account(user : schemas.Create_Account, token:str = Depends(oauth2_scheme), db:Session = Depends(get_db)):
 
-    credential_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="could not validate credentials", headers={"WWW-Authenticate": "Bearer"})
+    credential_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="could not validate credentials", headers={"WWW-Authenticate": "Bearer"})
     email_id = oauth2.verify_access_token(token, credential_exception)
     user_data = db.query(models.User).filter(models.User.email_id == email_id.id).first()
     if user_data :
-        raise HTTPException(detail= 'user already exists', status_code=status.HTTP_403_FORBIDDEN)
+        raise HTTPException(detail= 'user already exists', status_code=status.HTTP_409_CONFLICT)
     #hash the password - user.password
     password = user.password.encode('utf-8')
     hashed_password  = utils.hash(password)
@@ -32,15 +32,12 @@ def create_account(user : schemas.Create_Account, token:str = Depends(oauth2_sch
 #change password
 @router.put("/change_password")
 def change_password(user_credentials : schemas.ChangePassword, current_user: models.User = Depends(oauth2.get_current_user), db:Session = Depends(get_db)):
-
-    user = db.query(models.User).filter(models.User.id == current_user.id).first()
-    if not user :
-        raise HTTPException(detail= 'invalid credentials', status_code=status.HTTP_403_FORBIDDEN)
-    
-    password = user_credentials.password.encode('utf-8')
+    if not utils.verify(user_credentials.password, current_user.password):
+       raise HTTPException(detail= 'invalid credentials', status_code=status.HTTP_403_FORBIDDEN)
+    password = user_credentials.new_password.encode('utf-8')
     hashed_password  = utils.hash(password)
-    user.password = hashed_password
-    user.updated_on = datetime.now()
+    current_user.password = hashed_password
+    current_user.updated_on = datetime.now()
     db.commit()
     return {"Meassage" : "password changed sucessfully"}
 
@@ -75,31 +72,35 @@ def set_paassword(response : Response, user_credentials : schemas.SetPassword, c
     return {"Meassage" : "password changed sucessfully"}
 
 #user profile
-@router.post("/user_profile", status_code=status.HTTP_201_CREATED)
+@router.post("/user_profile", status_code=status.HTTP_201_CREATED, response_model= schemas.UserDetails)
 def user_profile(user: schemas.UserDetails, current_user: models.User = Depends(oauth2.get_current_user), db:Session = Depends(get_db)):
     user_details = db.query(models.UserDetail).filter(models.UserDetail.user_id == current_user.id).first()
     if user_details:
-     raise HTTPException(detail= 'user details already exists', status_code=status.HTTP_409_CONFLICT)
+     raise HTTPException(detail= 'user profile was already created', status_code=status.HTTP_409_CONFLICT)
       
     data = models.UserDetail(user_id= current_user.id, **user.dict())
     db.add(data)
     db.commit()
-    return {"Meassage" : "user profile created sucessfully"}
+    db.refresh(data)
+    return data
+   
 
-#edit profile
-@router.put("/edit_profile")
-def edit_profile(user: schemas.Edit, current_user: models.User = Depends(oauth2.get_current_user), db:Session = Depends(get_db)):
+#edit user_details
+@router.put("/edit_user_details")
+def edit_user_details(user: schemas.Edit, current_user: models.User = Depends(oauth2.get_current_user), db:Session = Depends(get_db)):
     user_details = db.query(models.UserDetail).filter(models.UserDetail.user_id == current_user.id).first()
     if user_details is None:
         raise HTTPException(detail= 'invalid credentials or user profile was not created', status_code=status.HTTP_403_FORBIDDEN)
     # copy the schema to the variable
     copy = user
+    # making changes to the user details table
     for field, value in user.dict(exclude_unset=True).items():
         if value is not None :
             setattr(user_details, field, value)
     user_details.updated_on = datetime.now()
 
     # user_data = db.query(models.User).filter(models.User.id == current_user.id).first()
+     # making changes to the user  table
     for field, value in copy.dict(exclude_unset=True).items():
         if value is not None :
             setattr(current_user, field , value)
@@ -115,5 +116,34 @@ def logout(response : Response, current_user: models.User = Depends(oauth2.get_c
     new_token = "None"
     response.headers.append("new_access_token", new_token)
     return {"Meassage" : "User logout sucessful"}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# #join tables 
+# @router.get("/get_user_data")
+# def get_user_data(db:Session = Depends(get_db), current_user: models.User = Depends(oauth2.get_current_user)):
+#     result = db.query(models.UserDetail, models.User).join(models.User).filter(models.UserDetail.user_id == current_user.id).add_columns(models.User.id).first()
+#     return result
+    
+    
+    
 
 

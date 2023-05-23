@@ -56,7 +56,6 @@ def check_and_create_new_token(token: str, credential_exception):
 def get_current_user(response : Response , token:str = Depends(oauth2_scheme), db:Session = Depends(database.get_db)):
    credential_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="could not validate credentials", headers={"WWW-Authenticate": "Bearer"})
    tkn = verify_access_token(token, credential_exception )
-
    new_tkn = check_and_create_new_token(token, credential_exception)
    if new_tkn:
         response.headers.append("new_access_token", new_tkn)

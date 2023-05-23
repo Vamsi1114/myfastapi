@@ -27,7 +27,9 @@ class UserDetails(BaseModel):
     image_url: str
     gender: str
     address: str
-    updated_on : Optional[datetime]
+    class Config:
+        orm_mode = True
+
 
 class Edit(BaseModel):
     first_name : str = None
@@ -39,7 +41,6 @@ class Edit(BaseModel):
     image_url: str = None
     gender: str = None
     address: str = None
-    
 
 class SetPassword(BaseModel):
     password : str
@@ -53,8 +54,19 @@ class Token(BaseModel):
     class Config:
         orm_mode = True
 
-
 class TokenData(BaseModel):
     id : Optional[str] = None
     class Config:
         orm_mode = True
+
+
+
+
+
+
+
+# class ResponseOut(BaseModel):
+#     UserDetails : UserDetails
+#     Create_Account : Create_Account
+#     class Config:
+#         orm_mode = True
